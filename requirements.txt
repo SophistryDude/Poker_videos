@@ -1,0 +1,11 @@
+openai-whisper
+anthropic
+elevenlabs
+google-api-python-client
+google-auth-oauthlib
+google-auth-httplib2
+python-dotenv
+watchdog
+pydub
+flask
+gunicorn

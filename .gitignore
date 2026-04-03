@@ -1,0 +1,10 @@
+.env
+config/client_secrets.json
+config/youtube_token.json
+input_audio/
+transcripts/
+cleaned_scripts/
+voice_output/
+video_output/
+__pycache__/
+*.pyc
