@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poker Leak Analyzer</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0e17;
+            color: #e1e4e8;
+            min-height: 100vh;
+        }
+        .container { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem; }
+        h1 {
+            font-size: 2.2rem;
+            margin-bottom: 0.3rem;
+            background: linear-gradient(135deg, #3fb950, #58a6ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .subtitle { color: #8b949e; margin-bottom: 2rem; font-size: 1.1rem; }
+
+        /* Tabs */
+        .tabs { display: flex; gap: 0; margin-bottom: 2rem; border-bottom: 1px solid #21262d; }
+        .tab {
+            padding: 0.8rem 1.5rem; cursor: pointer; color: #8b949e;
+            border-bottom: 2px solid transparent; transition: all 0.2s;
+        }
+        .tab:hover { color: #e1e4e8; }
+        .tab.active { color: #58a6ff; border-bottom-color: #58a6ff; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Cards */
+        .card {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .card h2 { font-size: 1.2rem; margin-bottom: 1rem; }
+        .card h3 { font-size: 1rem; color: #8b949e; margin-bottom: 0.5rem; }
+
+        /* Forms */
+        label { display: block; color: #8b949e; font-size: 0.85rem; margin-bottom: 0.3rem; }
+        input, select {
+            width: 100%; padding: 0.6rem 0.8rem; background: #0d1117;
+            border: 1px solid #30363d; border-radius: 6px; color: #e1e4e8;
+            font-size: 0.95rem; margin-bottom: 1rem;
+        }
+        input:focus { border-color: #58a6ff; outline: none; }
+        .row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+        .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+        /* Upload zone */
+        .upload-zone {
+            border: 2px dashed #30363d; border-radius: 10px; padding: 2.5rem;
+            text-align: center; cursor: pointer; transition: all 0.2s; margin-bottom: 1rem;
+        }
+        .upload-zone:hover, .upload-zone.dragover { border-color: #58a6ff; background: rgba(88,166,255,0.04); }
+        .upload-zone input { display: none; }
+
+        /* Buttons */
+        .btn {
+            display: inline-block; padding: 0.7rem 2rem;
+            border: none; border-radius: 6px; font-size: 1rem;
+            cursor: pointer; font-weight: 600; transition: all 0.2s;
+        }
+        .btn-primary { background: #238636; color: white; }
+        .btn-primary:hover { background: #2ea043; }
+        .btn-primary:disabled { background: #21262d; cursor: not-allowed; color: #484f58; }
+
+        /* Results */
+        #results { display: none; }
+        .result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .classification {
+            font-size: 1.4rem; font-weight: 700; padding: 0.4rem 1.2rem;
+            border-radius: 8px; display: inline-block;
+        }
+        .classification.leak { background: #2d1117; color: #f85149; }
+        .classification.strength { background: #0d2818; color: #3fb950; }
+
+        .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; }
+        .stat-box {
+            background: #0d1117; border-radius: 8px; padding: 1rem;
+            text-align: center; border: 1px solid #21262d;
+        }
+        .stat-box .value { font-size: 1.6rem; font-weight: 700; color: #58a6ff; }
+        .stat-box .label { font-size: 0.75rem; color: #8b949e; margin-top: 0.3rem; }
+
+        .ev-bar {
+            display: flex; align-items: center; gap: 0.8rem;
+            padding: 0.6rem 0; border-bottom: 1px solid #21262d;
+        }
+        .ev-bar .tier-label { min-width: 120px; color: #8b949e; font-size: 0.9rem; }
+        .ev-bar .bar-container { flex: 1; height: 24px; background: #21262d; border-radius: 4px; overflow: hidden; position: relative; }
+        .ev-bar .bar { height: 100%; border-radius: 4px; transition: width 0.5s; min-width: 2px; }
+        .ev-bar .bar.positive { background: #238636; }
+        .ev-bar .bar.negative { background: #da3633; }
+        .ev-bar .ev-value { min-width: 80px; text-align: right; font-weight: 600; font-size: 0.9rem; }
+
+        .recommendation {
+            background: #0d2818; border: 1px solid #238636; border-radius: 8px;
+            padding: 1.2rem; margin-top: 1rem;
+        }
+        .recommendation.negative { background: #2d1117; border-color: #da3633; }
+        .recommendation h3 { color: #3fb950; margin-bottom: 0.5rem; }
+        .recommendation.negative h3 { color: #f85149; }
+        .recommendation p { color: #8b949e; line-height: 1.5; }
+
+        .percentile-bar {
+            width: 100%; height: 30px; background: #21262d; border-radius: 6px;
+            position: relative; margin: 1rem 0; overflow: hidden;
+        }
+        .percentile-fill {
+            height: 100%; border-radius: 6px;
+            background: linear-gradient(90deg, #da3633, #e3b341, #238636);
+        }
+        .percentile-marker {
+            position: absolute; top: -4px; width: 3px; height: 38px;
+            background: white; border-radius: 2px;
+        }
+        .percentile-labels { display: flex; justify-content: space-between; font-size: 0.75rem; color: #484f58; }
+
+        .warning { background: #2d1d00; border: 1px solid #e3b341; border-radius: 6px; padding: 0.8rem 1rem; margin-bottom: 1rem; color: #e3b341; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Poker Leak Analyzer</h1>
+        <p class="subtitle">Find out what's holding back your game — backed by data from 100,000 player profiles</p>
+
+        <div class="tabs">
+            <div class="tab active" data-tab="upload">Upload CSV</div>
+            <div class="tab" data-tab="manual">Manual Entry</div>
+        </div>
+
+        <!-- CSV Upload Tab -->
+        <div id="upload" class="tab-content active">
+            <div class="card">
+                <h2>Import Your Results</h2>
+                <p style="color:#8b949e; margin-bottom:1rem; font-size:0.9rem;">
+                    Export from Poker Bankroll Tracker, Poker Analytics, or any CSV with buy_in and payout columns.
+                </p>
+                <div class="upload-zone" id="dropZone">
+                    <p style="font-size:1.1rem; margin-bottom:0.5rem;">Drop CSV file here</p>
+                    <p style="color:#484f58; font-size:0.85rem;">or click to browse</p>
+                    <input type="file" id="csvInput" accept=".csv">
+                </div>
+                <button class="btn btn-primary" id="uploadBtn" disabled>Analyze</button>
+            </div>
+        </div>
+
+        <!-- Manual Entry Tab -->
+        <div id="manual" class="tab-content">
+            <div class="card">
+                <h2>Enter Your Stats</h2>
+                <div class="row-2">
+                    <div>
+                        <label>Total Tournaments Played</label>
+                        <input type="number" id="m_tournaments" placeholder="e.g., 200">
+                    </div>
+                    <div>
+                        <label>Cash Rate (decimal, e.g., 0.20 for 20%)</label>
+                        <input type="number" step="0.01" id="m_cash_rate" placeholder="e.g., 0.20">
+                    </div>
+                </div>
+                <h3>Placement Distribution</h3>
+                <div class="row">
+                    <div><label>1st Place Finishes</label><input type="number" id="m_first" value="0"></div>
+                    <div><label>2nd Place Finishes</label><input type="number" id="m_second" value="0"></div>
+                    <div><label>3rd Place Finishes</label><input type="number" id="m_third" value="0"></div>
+                </div>
+                <div class="row">
+                    <div><label>4th-9th Finishes</label><input type="number" id="m_fourth_ninth" value="0"></div>
+                    <div><label>10th+ (Min-Cash)</label><input type="number" id="m_tenth_plus" value="0"></div>
+                    <div><label>Avg Field Size</label><input type="number" id="m_field_size" value="150"></div>
+                </div>
+                <button class="btn btn-primary" id="manualBtn">Analyze</button>
+            </div>
+        </div>
+
+        <!-- Results -->
+        <div id="results">
+            <div class="card">
+                <div class="result-header">
+                    <div>
+                        <h2>Your Assessment</h2>
+                        <div id="sampleWarning" class="warning" style="display:none; margin-top:0.5rem;">
+                            Sample size below 200 tournaments — results are provisional.
+                        </div>
+                    </div>
+                    <div id="classificationBadge" class="classification"></div>
+                </div>
+
+                <div class="stat-grid" id="statGrid"></div>
+            </div>
+
+            <div class="card">
+                <h2>Where You Stand</h2>
+                <p style="color:#8b949e; margin-bottom:0.5rem; font-size:0.9rem;">Your position among 100,000 tournament players</p>
+                <div class="percentile-bar">
+                    <div class="percentile-fill" style="width:100%"></div>
+                    <div class="percentile-marker" id="percentileMarker"></div>
+                </div>
+                <div class="percentile-labels">
+                    <span>Bottom 10%</span><span>25%</span><span>50%</span><span>75%</span><span>Top 10%</span>
+                </div>
+                <p id="percentileText" style="text-align:center; margin-top:0.8rem; font-size:1.1rem;"></p>
+            </div>
+
+            <div class="card">
+                <h2>EV by Stake Level</h2>
+                <p style="color:#8b949e; margin-bottom:1rem; font-size:0.9rem;">Projected expected value per tournament entry at each level</p>
+                <div id="evBars"></div>
+            </div>
+
+            <div id="recommendationCard"></div>
+        </div>
+    </div>
+
+    <script>
+        // Tabs
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.tab).classList.add('active');
+            });
+        });
+
+        // File upload
+        const dropZone = document.getElementById('dropZone');
+        const csvInput = document.getElementById('csvInput');
+        const uploadBtn = document.getElementById('uploadBtn');
+        let selectedFile = null;
+
+        dropZone.addEventListener('click', () => csvInput.click());
+        dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+        dropZone.addEventListener('drop', e => {
+            e.preventDefault(); dropZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length) { selectedFile = e.dataTransfer.files[0]; uploadBtn.disabled = false; }
+        });
+        csvInput.addEventListener('change', () => {
+            if (csvInput.files.length) { selectedFile = csvInput.files[0]; uploadBtn.disabled = false; }
+        });
+
+        uploadBtn.addEventListener('click', async () => {
+            if (!selectedFile) return;
+            uploadBtn.disabled = true; uploadBtn.textContent = 'Analyzing...';
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            try {
+                const res = await fetch('/api/analyze', { method: 'POST', body: formData });
+                const data = await res.json();
+                if (data.error) { alert(data.error); } else { showResults(data); }
+            } catch (err) { alert('Error: ' + err.message); }
+            uploadBtn.disabled = false; uploadBtn.textContent = 'Analyze';
+        });
+
+        // Manual entry
+        document.getElementById('manualBtn').addEventListener('click', async () => {
+            const btn = document.getElementById('manualBtn');
+            btn.disabled = true; btn.textContent = 'Analyzing...';
+            try {
+                const res = await fetch('/api/quick-assess', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        tournaments: document.getElementById('m_tournaments').value,
+                        cash_rate: document.getElementById('m_cash_rate').value,
+                        first: document.getElementById('m_first').value,
+                        second: document.getElementById('m_second').value,
+                        third: document.getElementById('m_third').value,
+                        fourth_ninth: document.getElementById('m_fourth_ninth').value,
+                        tenth_plus: document.getElementById('m_tenth_plus').value,
+                        avg_field_size: document.getElementById('m_field_size').value,
+                    }),
+                });
+                const data = await res.json();
+                if (data.error) { alert(data.error); } else { showResults(data); }
+            } catch (err) { alert('Error: ' + err.message); }
+            btn.disabled = false; btn.textContent = 'Analyze';
+        });
+
+        function showResults(data) {
+            document.getElementById('results').style.display = 'block';
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+
+            // Classification badge
+            const badge = document.getElementById('classificationBadge');
+            const isLeak = data.classification.includes('Leak');
+            badge.className = 'classification ' + (isLeak ? 'leak' : 'strength');
+            badge.textContent = data.classification.replace('Leak: ', '').replace('Strength: ', '');
+
+            // Sample warning
+            document.getElementById('sampleWarning').style.display = data.sample_reliable ? 'none' : 'block';
+
+            // Stats grid
+            const stats = [
+                { value: data.tournaments, label: 'Tournaments' },
+                { value: (data.cash_rate * 100).toFixed(1) + '%', label: 'Cash Rate' },
+                { value: (data.ft_rate * 100).toFixed(1) + '%', label: 'FT Rate' },
+                { value: (data.top3_conv * 100).toFixed(0) + '%', label: 'Top-3 Conv' },
+                { value: data.aggression.toFixed(2), label: 'Aggression' },
+            ];
+            if (data.roi !== undefined) stats.push({ value: data.roi + '%', label: 'ROI' });
+
+            document.getElementById('statGrid').innerHTML = stats.map(s =>
+                `<div class="stat-box"><div class="value">${s.value}</div><div class="label">${s.label}</div></div>`
+            ).join('');
+
+            // Percentile
+            const pct = data.percentile || 50;
+            document.getElementById('percentileMarker').style.left = pct + '%';
+            document.getElementById('percentileText').innerHTML =
+                `You're in the <strong>top ${100 - pct}%</strong> of all tournament players`;
+
+            // EV bars
+            const evs = data.ev_by_tier;
+            const maxAbs = Math.max(...Object.values(evs).map(Math.abs), 1);
+            document.getElementById('evBars').innerHTML = Object.entries(evs).map(([tier, ev]) => {
+                const pct = Math.abs(ev) / maxAbs * 80;
+                const cls = ev >= 0 ? 'positive' : 'negative';
+                const sign = ev >= 0 ? '+' : '';
+                return `<div class="ev-bar">
+                    <span class="tier-label">${tier}</span>
+                    <div class="bar-container"><div class="bar ${cls}" style="width:${pct}%"></div></div>
+                    <span class="ev-value" style="color:${ev >= 0 ? '#3fb950' : '#f85149'}">${sign}$${ev.toLocaleString()}</span>
+                </div>`;
+            }).join('');
+
+            // Recommendation
+            const bestEv = data.best_ev;
+            const isNeg = bestEv <= 0;
+            document.getElementById('recommendationCard').innerHTML = `
+                <div class="recommendation ${isNeg ? 'negative' : ''}">
+                    <h3>${isNeg ? 'Move Down' : 'Best Level: ' + data.best_tier}</h3>
+                    <p>${isNeg
+                        ? 'The model projects negative EV at all stake levels. Focus on improving fundamentals before investing more in tournament buy-ins.'
+                        : `Your highest projected EV is <strong>$${bestEv.toLocaleString()}/entry</strong> at the <strong>${data.best_tier}</strong> level.`
+                    }</p>
+                </div>`;
+        }
+    </script>
+</body>
+</html>

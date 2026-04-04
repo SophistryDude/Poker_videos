@@ -11,7 +11,7 @@ sudo apt-get update
 sudo apt-get install -y python3 python3-pip python3-venv ffmpeg git nginx certbot python3-certbot-nginx
 
 # Clone the repo (replace with your actual repo URL after creation)
-REPO_URL="${REPO_URL:-https://github.com/YOUR_USERNAME/Poker_videos.git}"
+REPO_URL="${REPO_URL:-https://github.com/SophistryDude/Poker_videos.git}"
 APP_DIR="/home/ubuntu/poker-pipeline"
 
 if [ -d "$APP_DIR" ]; then
