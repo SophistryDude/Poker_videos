@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: poker-app
+  namespace: poker-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: poker-app
+  template:
+    metadata:
+      labels:
+        app: poker-app
+    spec:
+      containers:
+        - name: poker-app
+          image: docker.io/library/poker-app:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 5001
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 5001
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 5001
+            initialDelaySeconds: 10
+            periodSeconds: 30

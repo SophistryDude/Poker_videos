@@ -59,7 +59,8 @@
       "Bash(/c/Users/nicho/AppData/Local/Programs/Python/Python3127/python.exe -c \"import openpyxl; print\\('ok'\\)\")",
       "Bash(/c/Users/nicho/AppData/Local/Programs/Python/Python3127/python.exe stake_move_model.py)",
       "Bash(/c/Users/nicho/AppData/Local/Programs/Python/Python3127/python.exe run_bulk_analysis.py)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(nslookup poker.alphabreak.vip 8.8.8.8)"
     ]
   }
 }

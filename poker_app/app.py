@@ -206,21 +206,27 @@ def analyze_results(results: list[dict]) -> dict:
     best_tier = max(evs, key=lambda k: evs[k])
     best_ev = evs[best_tier]
 
-    # Population percentile (rough estimate based on cash rate)
-    if cash_rate >= 0.30:
-        percentile = 95
-    elif cash_rate >= 0.25:
-        percentile = 88
-    elif cash_rate >= 0.20:
-        percentile = 78
-    elif cash_rate >= 0.15:
-        percentile = 60
-    elif cash_rate >= 0.12:
-        percentile = 45
-    elif cash_rate >= 0.08:
-        percentile = 25
+    # Population percentile based on realistic distribution (80% losing)
+    # Brand New 30%, Bad Reg 29%, Average 18%, Slightly Profitable 10%,
+    # Good Reg 7%, Great Reg 4%, Pro 2%
+    if cash_rate >= 0.36:
+        percentile = 99    # High Level Pro+
+    elif cash_rate >= 0.30:
+        percentile = 97    # Low-Mid Pro
+    elif cash_rate >= 0.27:
+        percentile = 95    # Great Reg
+    elif cash_rate >= 0.22:
+        percentile = 90    # Good Reg
+    elif cash_rate >= 0.17:
+        percentile = 83    # Slightly Profitable
+    elif cash_rate >= 0.13:
+        percentile = 73    # Average Player
+    elif cash_rate >= 0.09:
+        percentile = 41    # Bad Reg
+    elif cash_rate >= 0.05:
+        percentile = 15    # Brand New (experienced)
     else:
-        percentile = 10
+        percentile = 5     # Brand New
 
     return {
         "tournaments": tournaments,
@@ -354,6 +360,26 @@ def quick_assess():
     leak = classify_leak(normalized, evs)
     best_tier = max(evs, key=lambda k: evs[k])
 
+    # Population percentile
+    if cash_rate >= 0.36:
+        percentile = 99
+    elif cash_rate >= 0.30:
+        percentile = 97
+    elif cash_rate >= 0.27:
+        percentile = 95
+    elif cash_rate >= 0.22:
+        percentile = 90
+    elif cash_rate >= 0.17:
+        percentile = 83
+    elif cash_rate >= 0.13:
+        percentile = 73
+    elif cash_rate >= 0.09:
+        percentile = 41
+    elif cash_rate >= 0.05:
+        percentile = 15
+    else:
+        percentile = 5
+
     return jsonify({
         "tournaments": tournaments,
         "cash_rate": round(cash_rate, 4),
@@ -364,6 +390,7 @@ def quick_assess():
         "ev_by_tier": {TIERS[k]["label"]: round(evs[k]) for k in TIER_ORDER},
         "best_tier": TIERS[best_tier]["label"],
         "best_ev": round(evs[best_tier]),
+        "percentile": percentile,
         "sample_reliable": tournaments >= 200,
     })
 
@@ -373,12 +400,12 @@ def population():
     """Return population distribution stats for comparison."""
     return jsonify({
         "total_synthetic": 100000,
-        "losing_pct": 0.904,
+        "losing_pct": 0.80,
         "tier_distribution": {
-            "Brand New": {"pct": 0.30, "avg_cr": 0.047, "losing_pct": 1.0},
+            "Brand New": {"pct": 0.30, "avg_cr": 0.054, "losing_pct": 1.0},
             "Bad Reg": {"pct": 0.29, "avg_cr": 0.090, "losing_pct": 1.0},
             "Average Player": {"pct": 0.18, "avg_cr": 0.130, "losing_pct": 0.992},
-            "Slightly Profitable": {"pct": 0.10, "avg_cr": 0.170, "losing_pct": 0.928},
+            "Slightly Profitable": {"pct": 0.10, "avg_cr": 0.170, "losing_pct": 0.927},
             "Good Reg": {"pct": 0.07, "avg_cr": 0.220, "losing_pct": 0.529},
             "Great Reg": {"pct": 0.04, "avg_cr": 0.270, "losing_pct": 0.137},
             "Low Level Pro": {"pct": 0.012, "avg_cr": 0.300, "losing_pct": 0.012},

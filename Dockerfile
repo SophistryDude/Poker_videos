@@ -3,7 +3,7 @@ FROM python:3.12-slim
 WORKDIR /app
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir flask gunicorn numpy
+RUN pip install --no-cache-dir flask gunicorn numpy openpyxl
 
 COPY stake_move_model.py .
 COPY leak_analysis.py .

@@ -87,8 +87,13 @@ def classify_leak(p, evs):
     ft_to_cash = ft / cr if cr > 0 else 0
     mincash_pct = tenth_plus / max(1, cashes)
 
-    # Classify losing players (negative EV at their current level)
-    if ev_low <= 0:
+    # Check if player is profitable at ANY tier (not just $300)
+    # A player who's -$31 at $300 but +$661 at $600 is a winning player
+    # who has outgrown their current stake level
+    profitable_at_higher = any(evs[k] > 0 for k in list(evs.keys())[1:])
+
+    # Classify losing players (negative EV at current level AND no higher tier works)
+    if ev_low <= 0 and not profitable_at_higher:
         # Too Aggressive: high aggression is cratering their CR
         # Signal: agg > 0.65 AND CR is low for their tier
         if agg >= 0.65 and cr < 0.15:
@@ -117,6 +122,10 @@ def classify_leak(p, evs):
 
         # Generic — just not skilled enough
         return "Leak: Skill Ceiling"
+
+    # Player is losing at $300 but profitable higher — they've outgrown their level
+    if ev_low <= 0 and profitable_at_higher:
+        return "Strength: Outgrown Current Level"
 
     # Classify winning players by what drives their profit
     else:
