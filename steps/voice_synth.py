@@ -21,8 +21,14 @@ def synthesize_voice(script_path: str | Path) -> Path:
     script_path = Path(script_path)
     script_text = script_path.read_text(encoding="utf-8")
 
-    # Remove [PAUSE] markers — ElevenLabs handles pacing naturally
-    script_text = script_text.replace("[PAUSE]", "...")
+    # Add pauses between paragraphs for natural pacing
+    # Double newlines = paragraph break = 1.5 second pause
+    import re
+    script_text = script_text.replace("[PAUSE]", "... ... ...")
+    # Replace paragraph breaks with long pauses
+    script_text = re.sub(r'\n\s*\n', '\n... ... ...\n', script_text)
+    # Ensure sentence endings have breathing room
+    script_text = re.sub(r'\.(\s)', '. ... \\1', script_text)
 
     print(f"[Voice] Generating audio with ElevenLabs voice clone...")
     client = ElevenLabs(api_key=ELEVENLABS_API_KEY)

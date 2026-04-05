@@ -22,18 +22,18 @@ from openpyxl.utils import get_column_letter
 TIERS = {
     "low": {
         "label": "$0-$300",
-        "buyin": 250,
+        "buyin": 268,
         "payouts": {
-            # Estimated: 1st = 22x entry, min-cash = 2x, rest scaled
-            # weighted toward min-cash (typical $250 field structure)
-            "1st": 5500,    # 22x
-            "2nd": 3500,    # 14x
-            "3rd": 2400,    # 9.6x
-            "4th-9th": 1100,  # ~4.4x avg (ranges from ~3x to ~6x)
-            "10th+": 500,   # 2x
+            # REAL DATA: 1,686 tournaments, 26,562 payout records ($201-$300 range)
+            # Avg field: 420 players, avg pool: $95,323
+            "1st": 7594,
+            "2nd": 5843,
+            "3rd": 4298,
+            "4th-9th": 2051,
+            "10th+": 813,
         },
-        "sample_size": "est",
-        "note": "Estimated — 22x top, 2x min-cash, weighted toward min-cash",
+        "sample_size": 1686,
+        "note": "Real data from 1,686 tournaments at Wynn/Venetian/Orleans/South Point",
     },
     "mid_low": {
         "label": "$301-$600",
